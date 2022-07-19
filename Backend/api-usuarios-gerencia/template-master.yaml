@@ -1,0 +1,199 @@
+apiVersion: v1
+kind: Template
+labels:
+  demo: ${APP_NAME}-template
+metadata:
+  annotations:
+    description: ${APP_NAME} Spring Boot Geo Spatial Application Template
+    iconClass: icon-java
+    tags: microservice,spring
+  name: ${APP_NAME}-template
+objects:
+- apiVersion: image.openshift.io/v1
+  kind: ImageStream
+  metadata:
+    name: ${APP_NAME}
+    labels:
+      application: ${APP_NAME}
+  spec:
+    tags:
+    - name: latest
+- apiVersion: build.openshift.io/v1
+  kind: BuildConfig
+  metadata:
+    name: ${APP_NAME}
+    labels:
+      application: ${APP_NAME}
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: ${APP_NAME}:latest
+    source:
+      git:
+        ref: ${GIT_REF}
+        uri: ${GIT_URI}
+      type: Git
+      sourceSecret:
+        name: openshiftssh
+    strategy:
+      sourceStrategy:
+        env:
+        - name: MAVEN_MIRROR_URL
+          value: ${MAVEN_MIRROR_URL}
+        - name: MAVEN_ARGS
+          value: ${MAVEN_ARGS}
+        - name: db-cppagos-url
+          valueFrom:
+            secretKeyRef:
+              name: db-cppagos-url
+              key: WebHookSecretKey
+        - name: db-cppagos-user
+          valueFrom:
+            secretKeyRef:
+              name: db-cppagos-user
+              key: WebHookSecretKey
+        - name: db-cppagos-password
+          valueFrom:
+            secretKeyRef:
+              name: db-cppagos-password
+              key: WebHookSecretKey
+        - name: port-service-exposed
+          valueFrom:
+            secretKeyRef:
+              name: port-service-exposed
+              key: WebHookSecretKey
+        from:
+          kind: ImageStreamTag
+          name: java:openjdk-8-ubi8
+          namespace: openshift
+      type: Source
+- apiVersion: apps.openshift.io/v1
+  kind: DeploymentConfig
+  metadata:
+    name: ${APP_NAME}
+    labels:
+      application: ${APP_NAME}
+      deploymentconfig: ${APP_NAME}
+      app.kubernetes.io/part-of: ${APP_GROUP}
+  spec:
+    replicas: 1
+    selector:
+      deploymentconfig: ${APP_NAME}
+    strategy:
+      resources: {}
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          application: ${APP_NAME}
+          deploymentconfig: ${APP_NAME}
+          app.kubernetes.io/part-of: ${APP_GROUP}
+        name: ${APP_NAME}
+      spec:
+        containers:
+        - name: ${APP_NAME}
+          env:
+            - name: JAEGER_ENDPOINT
+              value: http://jaeger-all-in-one-inmemory-collector:14268/api/traces
+            - name: SERVICE_FORMATTER
+              value: service-b
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          resources: {}
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+          terminationMessagePath: /dev/termination-log
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - ${APP_NAME}
+        from:
+          kind: ImageStreamTag
+          name: ${APP_NAME}:latest
+      type: ImageChange
+    - type: ConfigChange
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: ${APP_NAME}
+      application: ${APP_NAME}
+    name: ${APP_NAME}
+  spec:
+    ports:
+    - port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      deploymentconfig: ${APP_NAME}
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    labels:
+      application: ${APP_NAME}
+    name: ${APP_NAME}
+  spec:
+    to:
+      kind: Service
+      name: ${APP_NAME}
+      weight: 100
+    tls:
+      termination: edge
+    wildcardPolicy: None
+- apiVersion: autoscaling/v1
+  kind: HorizontalPodAutoscaler
+  metadata:
+    labels:
+        app: ${APP_NAME}
+        application: ${APP_NAME}
+    name: ${APP_NAME}
+    namespace: ${NAME_SPACE}
+    labels:
+      application: ${APP_NAME}
+  spec:
+    maxReplicas: 5
+    minReplicas: 2
+    scaleTargetRef:
+      apiVersion: apps.openshift.io/v1
+      kind: DeploymentConfig
+      name: ${APP_NAME}
+    targetCPUUtilizationPercentage: 75  
+parameters:
+- displayName: Application name
+  name: APP_NAME
+  required: true
+  value: api-personas-rrhh-personas
+- description: Git source URI for application
+  displayName: Git source repository
+  name: GIT_URI
+  required: true
+  value: git@gitlab.coordinadorelectrico.cl:00-arquitectura/poc-redhat-arq.git
+- displayName: Git branch/tag reference
+  name: GIT_REF
+  required: true
+  value: master
+- description: Maven mirror url. If nexus is deployed locally, use nexus url (e.g. http://nexus.ci:8081/content/groups/public/)
+  displayName: Maven mirror url
+  name: MAVEN_MIRROR_URL
+  value: http://nexus3-arquitectura.apps.prod-os-1.coordinador.cl/repository/maven-group/
+- description: Aguments
+  displayName: ARG
+  name: MAVEN_ARGS
+  value: clean package -DskipTest=true -Dmaven.test.skip=true
+- description: Agrupación de aplicativos
+  displayName: APP_GROUP
+  name: APP_GROUP
+  value: REDHAT
+- description: Namespace environment
+  displayName: namespace
+  name: NAME_SPACE
+  value: coordinador

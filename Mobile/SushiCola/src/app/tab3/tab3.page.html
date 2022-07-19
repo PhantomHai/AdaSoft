@@ -1,0 +1,85 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title> Perfil </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-row>
+    <ion-col sizeLg="6" sizeMd="6" sizeXs="12">
+      <ion-card>
+        <ion-card-title>
+          <ion-label *ngIf="nombreCompleto">
+            {{user.nombre}} {{user.apellido}}
+          </ion-label>
+          <ion-label *ngIf="!nombreCompleto"> {{user.username}} </ion-label>
+        </ion-card-title>
+        <ion-card-content>
+          <ion-avatar slot="" (click)="switchModify()">
+            <ion-icon size="large" name="create-outline"></ion-icon>
+          </ion-avatar>
+          <ion-list *ngIf="modify">
+            <ion-label *ngIf="user.nombre"
+              >Nombre:
+              <ion-input
+                placeholder="{{user.nombre}}"
+                value="{{user.nombre}}"
+              ></ion-input
+            ></ion-label>
+            <ion-label *ngIf="user.apellido">
+              Apellido
+              <ion-input
+                placeholder="{{user.apellido}}"
+                value="{{user.apellido}}"
+              ></ion-input>
+            </ion-label>
+            <ion-label *ngIf="getTipoUser() == 1">
+              Dirección
+              <ion-input
+                placeholder="{{user.direccion}}"
+                value="{{user.direccion}}"
+              ></ion-input>
+            </ion-label>
+            <ion-label>
+              Teléfono
+              <ion-input
+                placeholder="{{user.telefono}}"
+                value="{{user.telefono}}"
+              ></ion-input>
+            </ion-label>
+            <ion-label *ngIf="getTipoUser() == 2 && user.patente">
+              Patente
+              <ion-input
+                placeholder="{{user.patente}}"
+                value="{{user.patente}}"
+              ></ion-input>
+            </ion-label>
+            <ion-button expand="full" (click)="modificar()">Modificar</ion-button>
+          </ion-list>
+          <ion-list *ngIf="!modify">
+            <ion-item *ngIf="user.nombre">
+              <ion-label>Nombre: {{user.nombre}} </ion-label>
+            </ion-item>
+            <ion-item *ngIf="user.apellido">
+              <ion-label> Apellido: {{user.apellido}} </ion-label>
+            </ion-item>
+            <ion-item *ngIf="getTipoUser() == 1">
+              <ion-label> Dirección: {{user.direccion}} </ion-label>
+            </ion-item>
+            <ion-item>
+              <ion-label> Teléfono: {{user.telefono}} </ion-label>
+            </ion-item>
+            <ion-item *ngIf="getTipoUser() == 2 && user.patente">
+              <ion-label> Patente: {{user.patente}} </ion-label>
+            </ion-item>
+            <ion-item *ngIf="getTipoUser() == 2"
+              ><ion-label> Estado: {{estado}} </ion-label>
+            </ion-item>
+            <ion-button expand="full" (click)="changeStatus()">Cambiar Estado</ion-button>
+          </ion-list>
+        </ion-card-content>
+      </ion-card>
+    </ion-col>
+  </ion-row>
+  <ion-button expand="full" (click)="logout()">Logout</ion-button>
+</ion-content>

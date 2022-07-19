@@ -1,0 +1,28 @@
+version: '3.2'
+services:
+  #postgres:
+   # restart: always
+    #container_name: postgres-productos
+    #image: postgres:latest
+    #networks:
+    #  - adasoft-network
+    #ports:
+    #  - '5432:5432'
+    #environment:
+    #     - POSTGRES_PASSWORD=postgrespw
+    #     - POSTGRES_USER=postgres
+    #     - POSTGRES_DB=gerencia
+# APP**
+  web:
+    build: .
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gerencia
+    expose:
+      - 8092
+    ports:
+      - 8092:8092
+    networks:
+      - adasoft-network
+networks:
+  adasoft-network:
+    external: true
